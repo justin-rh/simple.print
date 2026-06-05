@@ -49,7 +49,7 @@ function sendZpl(printerIp, printerPort, zpl) {
 }
 
 app.post('/print', async (req, res) => {
-  const { labelName, deviceIp, printerIp, printerPort, printWidth, labelLength, fontSize, barcodeHeight, quantity } = req.body;
+  const { labelName, deviceIp, printerIp, printerPort, printWidth, labelLength, fontSize, barcodeHeight, quantity, mode, showInterpLine } = req.body;
 
   if (!labelName || (mode !== 'barcode' && !deviceIp) || !printerIp || !printerPort) {
     return res.status(400).json({ error: 'All fields are required.' });
