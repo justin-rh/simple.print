@@ -19,7 +19,7 @@ document.querySelectorAll('.mode-btn').forEach(btn => {
     const deviceIpGroup = document.getElementById('deviceIp-group');
     const deviceIpInput = document.getElementById('deviceIp');
     const isBarcodeMode = labelMode === 'barcode';
-    deviceIpGroup.hidden = isBarcodeMode;
+    deviceIpGroup.style.display = isBarcodeMode ? 'none' : '';
     deviceIpInput.required = !isBarcodeMode;
     updatePreview();
   });
