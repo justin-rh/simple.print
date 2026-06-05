@@ -60,8 +60,8 @@ const PATTERNS = [
   '11010011100','1100011101011',
 ];
 
-function drawBarcode(canvas, text) {
-  const BAR_MODULE = 3;
+function drawBarcode(canvas, text, barModule = 3) {
+  const BAR_MODULE = Math.max(1, Math.round(barModule));
   const HEIGHT = 80;
   const START = 104;
   const STOP = 106;
@@ -101,7 +101,11 @@ function buildZplLocal() {
   const qty = Math.max(1, parseInt(document.getElementById('quantity').value) || 1);
   const labelName = labelNameEl.value || '';
   const deviceIp = deviceIpEl.value || '';
-  const barcodeWidth = (35 + 11 * labelName.length) * 5;
+  const numModules = 35 + 11 * labelName.length;
+  const moduleWidth = labelMode === 'barcode'
+    ? Math.min(10, Math.round((pw * 0.75) / numModules * 10) / 10)
+    : 5;
+  const barcodeWidth = Math.round(numModules * moduleWidth);
   const barcodeX = Math.max(0, Math.round((pw - barcodeWidth) / 2));
   const barcodeY = labelMode === 'barcode' ? Math.round((ll - bh) / 2) : 240;
   const interp = document.getElementById('showInterpLine').checked ? 'Y' : 'N';
@@ -110,18 +114,19 @@ function buildZplLocal() {
   if (labelMode === 'full') {
     zpl += `^CF0,${fs}^FO0,80^FB${pw},1,0,C,0^FD${labelName}^FS`;
   }
-  zpl += `^BY5,3,${bh}^FO${barcodeX},${barcodeY}^BCN,${bh},${interp},N,N^FD${labelName}^FS`;
+  zpl += `^BY${moduleWidth},3,${bh}^FO${barcodeX},${barcodeY}^BCN,${bh},${interp},N,N^FD${labelName}^FS`;
   if (labelMode !== 'barcode') {
     zpl += `^CF0,55^FO0,${ll - 50}^FB${pw},1,0,C,0^FD${deviceIp}^FS`;
   }
   zpl += `^PQ${qty}^XZ`;
-  return zpl;
+  return { zpl, moduleWidth };
 }
 
 function updatePreview() {
   const labelName = labelNameEl.value;
   const deviceIp = deviceIpEl.value;
   const showInterp = document.getElementById('showInterpLine').checked;
+  const { zpl, moduleWidth } = buildZplLocal();
 
   previewLabelName.style.display = labelMode === 'full' ? '' : 'none';
   previewLabelName.textContent = labelName || ' ';
@@ -129,8 +134,8 @@ function updatePreview() {
   previewBarcodeText.textContent = labelName || ' ';
   previewDeviceIp.style.display = labelMode === 'full' ? '' : 'none';
   previewDeviceIp.textContent = deviceIp || ' ';
-  if (labelName) { try { drawBarcode(barcodeCanvas, labelName); } catch (_) {} }
-  zplOutput.textContent = buildZplLocal();
+  if (labelName) { try { drawBarcode(barcodeCanvas, labelName, moduleWidth); } catch (_) {} }
+  zplOutput.textContent = zpl;
 }
 
 document.querySelectorAll('input').forEach(el => el.addEventListener('input', updatePreview));

@@ -12,8 +12,12 @@ function buildZpl({ labelName, deviceIp, printWidth, labelLength, fontSize, barc
   const fs = parseInt(fontSize) || 60;
   const bh = parseInt(barcodeHeight) || 150;
   const qty = Math.max(1, parseInt(quantity) || 1);
-  // Code 128B width: (11 start + 11*len data + 11 check + 13 stop) * moduleWidth
-  const barcodeWidth = (35 + 11 * labelName.length) * 5;
+  // Code 128B module count: 11 start + 11*len data + 11 check + 13 stop
+  const numModules = 35 + 11 * labelName.length;
+  const moduleWidth = mode === 'barcode'
+    ? Math.min(10, Math.round((pw * 0.75) / numModules * 10) / 10)
+    : 5;
+  const barcodeWidth = Math.round(numModules * moduleWidth);
   const barcodeX = Math.max(0, Math.round((pw - barcodeWidth) / 2));
   const barcodeY = mode === 'barcode' ? Math.round((ll - bh) / 2) : 240;
   const interp = showInterpLine === false || showInterpLine === 'false' ? 'N' : 'Y';
@@ -22,7 +26,7 @@ function buildZpl({ labelName, deviceIp, printWidth, labelLength, fontSize, barc
   if (mode !== 'barcode') {
     zpl += `^CF0,${fs}^FO0,80^FB${pw},1,0,C,0^FD${labelName}^FS`;
   }
-  zpl += `^BY5,3,${bh}^FO${barcodeX},${barcodeY}^BCN,${bh},${interp},N,N^FD${labelName}^FS`;
+  zpl += `^BY${moduleWidth},3,${bh}^FO${barcodeX},${barcodeY}^BCN,${bh},${interp},N,N^FD${labelName}^FS`;
   if (mode !== 'barcode') {
     zpl += `^CF0,55^FO0,${ll - 50}^FB${pw},1,0,C,0^FD${deviceIp}^FS`;
   }
