@@ -16,6 +16,11 @@ document.querySelectorAll('.mode-btn').forEach(btn => {
     document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b === btn));
     document.getElementById('labelName-hint').textContent =
       labelMode === 'barcode' ? '(barcode data)' : '(header text + barcode)';
+    const deviceIpGroup = document.getElementById('deviceIp-group');
+    const deviceIpInput = document.getElementById('deviceIp');
+    const isBarcodeMode = labelMode === 'barcode';
+    deviceIpGroup.hidden = isBarcodeMode;
+    deviceIpInput.required = !isBarcodeMode;
     updatePreview();
   });
 });
@@ -104,7 +109,9 @@ function buildZplLocal() {
     zpl += `^CF0,${fs}^FO0,80^FB${pw},1,0,C,0^FD${labelName}^FS`;
   }
   zpl += `^BY5,3,${bh}^FO${barcodeX},240^BCN,${bh},${interp},N,N^FD${labelName}^FS`;
-  zpl += `^CF0,55^FO0,${ll - 50}^FB${pw},1,0,C,0^FD${deviceIp}^FS`;
+  if (labelMode !== 'barcode') {
+    zpl += `^CF0,55^FO0,${ll - 50}^FB${pw},1,0,C,0^FD${deviceIp}^FS`;
+  }
   zpl += `^PQ${qty}^XZ`;
   return zpl;
 }
@@ -118,6 +125,7 @@ function updatePreview() {
   previewLabelName.textContent = labelName || ' ';
   previewBarcodeText.style.display = showInterp ? '' : 'none';
   previewBarcodeText.textContent = labelName || ' ';
+  previewDeviceIp.style.display = labelMode === 'full' ? '' : 'none';
   previewDeviceIp.textContent = deviceIp || ' ';
   if (labelName) { try { drawBarcode(barcodeCanvas, labelName); } catch (_) {} }
   zplOutput.textContent = buildZplLocal();

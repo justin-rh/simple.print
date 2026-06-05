@@ -20,7 +20,9 @@ function buildZpl({ labelName, deviceIp, printWidth, labelLength, fontSize, barc
     zpl += `^CF0,${fs}^FO0,80^FB${pw},1,0,C,0^FD${labelName}^FS`;
   }
   zpl += `^BY5,3,${bh}^FO${barcodeX},240^BCN,${bh},${interp},N,N^FD${labelName}^FS`;
-  zpl += `^CF0,55^FO0,${ll - 50}^FB${pw},1,0,C,0^FD${deviceIp}^FS`;
+  if (mode !== 'barcode') {
+    zpl += `^CF0,55^FO0,${ll - 50}^FB${pw},1,0,C,0^FD${deviceIp}^FS`;
+  }
   zpl += `^PQ${qty}^XZ`;
   return zpl;
 }
@@ -49,7 +51,7 @@ function sendZpl(printerIp, printerPort, zpl) {
 app.post('/print', async (req, res) => {
   const { labelName, deviceIp, printerIp, printerPort, printWidth, labelLength, fontSize, barcodeHeight, quantity } = req.body;
 
-  if (!labelName || !deviceIp || !printerIp || !printerPort) {
+  if (!labelName || (mode !== 'barcode' && !deviceIp) || !printerIp || !printerPort) {
     return res.status(400).json({ error: 'All fields are required.' });
   }
 
