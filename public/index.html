@@ -14,12 +14,17 @@
     </header>
 
     <main>
+      <div class="mode-toggle" role="group" aria-label="Label mode">
+        <button type="button" class="mode-btn active" data-mode="full">Full Label</button>
+        <button type="button" class="mode-btn" data-mode="barcode">Barcode Only</button>
+      </div>
+
       <form id="print-form">
 
         <section class="card">
           <h2>Label Content</h2>
           <div class="field-group">
-            <label for="labelName">Label Name <span class="hint">(header text + barcode)</span></label>
+            <label for="labelName">Label Name <span class="hint" id="labelName-hint">(header text + barcode)</span></label>
             <input type="text" id="labelName" name="labelName" value="PHLABELS330" required />
           </div>
           <div class="field-group">
@@ -30,6 +35,10 @@
             <label for="quantity">Copies</label>
             <input type="number" id="quantity" name="quantity" value="1" min="1" max="999" />
           </div>
+          <label class="checkbox-label">
+            <input type="checkbox" id="showInterpLine" checked />
+            Show text under barcode
+          </label>
         </section>
 
         <section class="card">

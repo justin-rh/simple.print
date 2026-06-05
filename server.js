@@ -6,28 +6,23 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-function buildZpl({ labelName, deviceIp, printWidth, labelLength, fontSize, barcodeHeight, quantity }) {
+function buildZpl({ labelName, deviceIp, printWidth, labelLength, fontSize, barcodeHeight, quantity, mode, showInterpLine }) {
   const pw = parseInt(printWidth) || 1200;
   const ll = parseInt(labelLength) || 600;
   const fs = parseInt(fontSize) || 60;
   const bh = parseInt(barcodeHeight) || 150;
   const qty = Math.max(1, parseInt(quantity) || 1);
   const barcodeX = Math.round((pw - 780) / 2);
+  const interp = showInterpLine === false || showInterpLine === 'false' ? 'N' : 'Y';
 
-  return (
-    `^XA` +
-    `^PW${pw}` +
-    `^LL${ll}` +
-    `^CI28` +
-    `^CF0,${fs}` +
-    `^FO0,80^FB${pw},1,0,C,0^FD${labelName}^FS` +
-    `^BY5,3,${bh}` +
-    `^FO${barcodeX},240^BCN,${bh},Y,N,N^FD${labelName}^FS` +
-    `^CF0,55` +
-    `^FO0,${ll - 50}^FB${pw},1,0,C,0^FD${deviceIp}^FS` +
-    `^PQ${qty}` +
-    `^XZ`
-  );
+  let zpl = `^XA^PW${pw}^LL${ll}^CI28`;
+  if (mode !== 'barcode') {
+    zpl += `^CF0,${fs}^FO0,80^FB${pw},1,0,C,0^FD${labelName}^FS`;
+  }
+  zpl += `^BY5,3,${bh}^FO${barcodeX},240^BCN,${bh},${interp},N,N^FD${labelName}^FS`;
+  zpl += `^CF0,55^FO0,${ll - 50}^FB${pw},1,0,C,0^FD${deviceIp}^FS`;
+  zpl += `^PQ${qty}^XZ`;
+  return zpl;
 }
 
 function sendZpl(printerIp, printerPort, zpl) {

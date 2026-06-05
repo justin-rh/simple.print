@@ -7,6 +7,19 @@ const previewDeviceIp = document.getElementById('preview-device-ip');
 const zplOutput = document.getElementById('zpl-output');
 const barcodeCanvas = document.getElementById('barcode-canvas');
 
+// ── Mode toggle ────────────────────────────────────────────────
+let labelMode = 'full';
+
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    labelMode = btn.dataset.mode;
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b === btn));
+    document.getElementById('labelName-hint').textContent =
+      labelMode === 'barcode' ? '(barcode data)' : '(header text + barcode)';
+    updatePreview();
+  });
+});
+
 // Collapsible advanced section
 const toggle = document.querySelector('.collapse-toggle');
 const collapseBody = document.querySelector('.collapse-body');
@@ -84,20 +97,26 @@ function buildZplLocal() {
   const labelName = labelNameEl.value || '';
   const deviceIp = deviceIpEl.value || '';
   const barcodeX = Math.round((pw - 780) / 2);
+  const interp = document.getElementById('showInterpLine').checked ? 'Y' : 'N';
 
-  return (
-    `^XA^PW${pw}^LL${ll}^CI28` +
-    `^CF0,${fs}^FO0,80^FB${pw},1,0,C,0^FD${labelName}^FS` +
-    `^BY5,3,${bh}^FO${barcodeX},240^BCN,${bh},Y,N,N^FD${labelName}^FS` +
-    `^CF0,55^FO0,${ll - 50}^FB${pw},1,0,C,0^FD${deviceIp}^FS` +
-    `^PQ${qty}^XZ`
-  );
+  let zpl = `^XA^PW${pw}^LL${ll}^CI28`;
+  if (labelMode === 'full') {
+    zpl += `^CF0,${fs}^FO0,80^FB${pw},1,0,C,0^FD${labelName}^FS`;
+  }
+  zpl += `^BY5,3,${bh}^FO${barcodeX},240^BCN,${bh},${interp},N,N^FD${labelName}^FS`;
+  zpl += `^CF0,55^FO0,${ll - 50}^FB${pw},1,0,C,0^FD${deviceIp}^FS`;
+  zpl += `^PQ${qty}^XZ`;
+  return zpl;
 }
 
 function updatePreview() {
   const labelName = labelNameEl.value;
   const deviceIp = deviceIpEl.value;
+  const showInterp = document.getElementById('showInterpLine').checked;
+
+  previewLabelName.style.display = labelMode === 'full' ? '' : 'none';
   previewLabelName.textContent = labelName || ' ';
+  previewBarcodeText.style.display = showInterp ? '' : 'none';
   previewBarcodeText.textContent = labelName || ' ';
   previewDeviceIp.textContent = deviceIp || ' ';
   if (labelName) { try { drawBarcode(barcodeCanvas, labelName); } catch (_) {} }
@@ -133,6 +152,8 @@ document.getElementById('print-form').addEventListener('submit', async (e) => {
     fontSize: document.getElementById('fontSize').value,
     barcodeHeight: document.getElementById('barcodeHeight').value,
     quantity: document.getElementById('quantity').value,
+    mode: labelMode,
+    showInterpLine: document.getElementById('showInterpLine').checked,
   };
 
   try {
