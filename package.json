@@ -1,0 +1,12 @@
+{
+  "name": "simple-print",
+  "version": "1.0.0",
+  "description": "ZPL label printer web UI",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
