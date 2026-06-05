@@ -101,14 +101,16 @@ function buildZplLocal() {
   const qty = Math.max(1, parseInt(document.getElementById('quantity').value) || 1);
   const labelName = labelNameEl.value || '';
   const deviceIp = deviceIpEl.value || '';
-  const barcodeX = Math.round((pw - 780) / 2);
+  const barcodeWidth = (35 + 11 * labelName.length) * 5;
+  const barcodeX = Math.max(0, Math.round((pw - barcodeWidth) / 2));
+  const barcodeY = labelMode === 'barcode' ? Math.round((ll - bh) / 2) : 240;
   const interp = document.getElementById('showInterpLine').checked ? 'Y' : 'N';
 
   let zpl = `^XA^PW${pw}^LL${ll}^CI28`;
   if (labelMode === 'full') {
     zpl += `^CF0,${fs}^FO0,80^FB${pw},1,0,C,0^FD${labelName}^FS`;
   }
-  zpl += `^BY5,3,${bh}^FO${barcodeX},240^BCN,${bh},${interp},N,N^FD${labelName}^FS`;
+  zpl += `^BY5,3,${bh}^FO${barcodeX},${barcodeY}^BCN,${bh},${interp},N,N^FD${labelName}^FS`;
   if (labelMode !== 'barcode') {
     zpl += `^CF0,55^FO0,${ll - 50}^FB${pw},1,0,C,0^FD${deviceIp}^FS`;
   }

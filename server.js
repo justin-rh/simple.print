@@ -12,14 +12,17 @@ function buildZpl({ labelName, deviceIp, printWidth, labelLength, fontSize, barc
   const fs = parseInt(fontSize) || 60;
   const bh = parseInt(barcodeHeight) || 150;
   const qty = Math.max(1, parseInt(quantity) || 1);
-  const barcodeX = Math.round((pw - 780) / 2);
+  // Code 128B width: (11 start + 11*len data + 11 check + 13 stop) * moduleWidth
+  const barcodeWidth = (35 + 11 * labelName.length) * 5;
+  const barcodeX = Math.max(0, Math.round((pw - barcodeWidth) / 2));
+  const barcodeY = mode === 'barcode' ? Math.round((ll - bh) / 2) : 240;
   const interp = showInterpLine === false || showInterpLine === 'false' ? 'N' : 'Y';
 
   let zpl = `^XA^PW${pw}^LL${ll}^CI28`;
   if (mode !== 'barcode') {
     zpl += `^CF0,${fs}^FO0,80^FB${pw},1,0,C,0^FD${labelName}^FS`;
   }
-  zpl += `^BY5,3,${bh}^FO${barcodeX},240^BCN,${bh},${interp},N,N^FD${labelName}^FS`;
+  zpl += `^BY5,3,${bh}^FO${barcodeX},${barcodeY}^BCN,${bh},${interp},N,N^FD${labelName}^FS`;
   if (mode !== 'barcode') {
     zpl += `^CF0,55^FO0,${ll - 50}^FB${pw},1,0,C,0^FD${deviceIp}^FS`;
   }
@@ -55,7 +58,7 @@ app.post('/print', async (req, res) => {
     return res.status(400).json({ error: 'All fields are required.' });
   }
 
-  const zpl = buildZpl({ labelName, deviceIp, printWidth, labelLength, fontSize, barcodeHeight, quantity });
+  const zpl = buildZpl({ labelName, deviceIp, printWidth, labelLength, fontSize, barcodeHeight, quantity, mode, showInterpLine });
 
   try {
     await sendZpl(printerIp, printerPort, zpl);
