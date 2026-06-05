@@ -6,12 +6,13 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-function buildZpl({ labelName, deviceIp, printWidth, labelLength, fontSize, barcodeHeight }) {
-  const pw = printWidth || 1200;
-  const ll = labelLength || 600;
-  const fs = fontSize || 60;
-  const bh = barcodeHeight || 150;
-  const barcodeX = Math.round((pw - 780) / 2); // center the barcode (~780 dots wide at module 5)
+function buildZpl({ labelName, deviceIp, printWidth, labelLength, fontSize, barcodeHeight, quantity }) {
+  const pw = parseInt(printWidth) || 1200;
+  const ll = parseInt(labelLength) || 600;
+  const fs = parseInt(fontSize) || 60;
+  const bh = parseInt(barcodeHeight) || 150;
+  const qty = Math.max(1, parseInt(quantity) || 1);
+  const barcodeX = Math.round((pw - 780) / 2);
 
   return (
     `^XA` +
@@ -24,50 +25,77 @@ function buildZpl({ labelName, deviceIp, printWidth, labelLength, fontSize, barc
     `^FO${barcodeX},240^BCN,${bh},Y,N,N^FD${labelName}^FS` +
     `^CF0,55` +
     `^FO0,${ll - 50}^FB${pw},1,0,C,0^FD${deviceIp}^FS` +
+    `^PQ${qty}` +
     `^XZ`
   );
 }
 
-app.post('/print', (req, res) => {
-  const { labelName, deviceIp, printerIp, printerPort, printWidth, labelLength, fontSize, barcodeHeight } = req.body;
+function sendZpl(printerIp, printerPort, zpl) {
+  return new Promise((resolve, reject) => {
+    const client = new net.Socket();
+    let settled = false;
+
+    const finish = (err) => {
+      if (settled) return;
+      settled = true;
+      client.destroy();
+      if (err) reject(err); else resolve();
+    };
+
+    client.setTimeout(5000);
+    client.on('timeout', () => finish(new Error('Connection timed out.')));
+    client.on('error', finish);
+    client.connect(parseInt(printerPort, 10), printerIp, () => {
+      client.write(zpl, 'utf8', () => finish(null));
+    });
+  });
+}
+
+app.post('/print', async (req, res) => {
+  const { labelName, deviceIp, printerIp, printerPort, printWidth, labelLength, fontSize, barcodeHeight, quantity } = req.body;
 
   if (!labelName || !deviceIp || !printerIp || !printerPort) {
     return res.status(400).json({ error: 'All fields are required.' });
   }
 
-  const zpl = buildZpl({ labelName, deviceIp, printWidth, labelLength, fontSize, barcodeHeight });
-  const port = parseInt(printerPort, 10);
+  const zpl = buildZpl({ labelName, deviceIp, printWidth, labelLength, fontSize, barcodeHeight, quantity });
 
-  const client = new net.Socket();
-  let responded = false;
-
-  const done = (err) => {
-    if (responded) return;
-    responded = true;
-    client.destroy();
-    if (err) {
-      res.status(500).json({ error: err.message });
-    } else {
-      res.json({ ok: true, zpl });
-    }
-  };
-
-  client.setTimeout(5000);
-  client.on('timeout', () => done(new Error('Connection timed out.')));
-  client.on('error', (err) => done(err));
-
-  client.connect(port, printerIp, () => {
-    client.write(zpl, 'utf8', () => done(null));
-  });
+  try {
+    await sendZpl(printerIp, printerPort, zpl);
+    res.json({ ok: true, zpl });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-app.get('/preview', (req, res) => {
-  const { labelName, deviceIp, printWidth, labelLength, fontSize, barcodeHeight } = req.query;
-  if (!labelName || !deviceIp) {
-    return res.status(400).json({ error: 'labelName and deviceIp are required.' });
+app.post('/print-batch', async (req, res) => {
+  const { labels, defaults } = req.body;
+
+  if (!Array.isArray(labels) || labels.length === 0) {
+    return res.status(400).json({ error: 'labels array is required.' });
   }
-  const zpl = buildZpl({ labelName, deviceIp, printWidth, labelLength, fontSize, barcodeHeight });
-  res.json({ zpl });
+
+  const results = [];
+
+  for (const label of labels) {
+    const config = { ...defaults, ...label };
+
+    if (!config.labelName || !config.deviceIp || !config.printerIp || !config.printerPort) {
+      results.push({ ok: false, labelName: config.labelName || '(unknown)', error: 'Missing required fields.' });
+      continue;
+    }
+
+    const zpl = buildZpl(config);
+
+    try {
+      await sendZpl(config.printerIp, config.printerPort, zpl);
+      results.push({ ok: true, labelName: config.labelName });
+    } catch (err) {
+      results.push({ ok: false, labelName: config.labelName, error: err.message });
+    }
+  }
+
+  res.json({ results });
 });
 
 const PORT = process.env.PORT || 3000;

@@ -26,6 +26,10 @@
             <label for="deviceIp">Device IP <span class="hint">(bottom text)</span></label>
             <input type="text" id="deviceIp" name="deviceIp" value="10.180.2.113" required />
           </div>
+          <div class="field-group short">
+            <label for="quantity">Copies</label>
+            <input type="number" id="quantity" name="quantity" value="1" min="1" max="999" />
+          </div>
         </section>
 
         <section class="card">
@@ -91,6 +95,44 @@
         </div>
 
       </form>
+
+      <!-- CSV Batch Section -->
+      <section class="card csv-card" id="csv-card">
+        <h2>Batch Print via CSV</h2>
+        <p class="csv-desc">
+          Upload a CSV to print multiple labels. Columns: <code>labelName</code>, <code>deviceIp</code>,
+          and optionally <code>printerIp</code>, <code>printerPort</code>, <code>quantity</code>.
+          Optional columns fall back to the Printer Target values above.
+        </p>
+        <div class="csv-actions">
+          <label class="btn-secondary" for="csv-input">Choose CSV</label>
+          <input type="file" id="csv-input" accept=".csv,text/csv" />
+          <button type="button" class="btn-ghost" id="download-template">Download Template</button>
+        </div>
+
+        <div id="csv-preview" hidden>
+          <div class="csv-meta" id="csv-meta"></div>
+          <div class="table-wrap">
+            <table id="csv-table">
+              <thead id="csv-thead"></thead>
+              <tbody id="csv-tbody"></tbody>
+            </table>
+          </div>
+          <div class="csv-batch-actions">
+            <button type="button" class="btn-print" id="batch-print-btn">Print Batch</button>
+            <button type="button" class="btn-ghost" id="csv-clear">Clear</button>
+          </div>
+        </div>
+
+        <div id="batch-progress" hidden>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar" id="progress-bar"></div>
+          </div>
+          <p class="progress-label" id="progress-label">Printing…</p>
+          <div id="batch-results"></div>
+        </div>
+      </section>
+
     </main>
 
     <div id="toast" class="toast" aria-live="polite"></div>
